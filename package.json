@@ -1,0 +1,16 @@
+{
+  "name": "aire-plus-final",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "redis": "^6.3.1"
+  }
+}
