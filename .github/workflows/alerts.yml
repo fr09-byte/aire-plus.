@@ -1,0 +1,40 @@
+name: Comprobar alertas AIRE+
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: aire-alert-scheduler
+  cancel-in-progress: false
+jobs:
+  check:
+    if: github.event_name == 'workflow_dispatch' || vars.AIRE_SCHEDULER_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Consultar el programador protegido
+        env:
+          AIRE_BASE_URL: ${{ vars.AIRE_BASE_URL }}
+          AIRE_CRON_SECRET: ${{ secrets.AIRE_CRON_SECRET }}
+        run: |
+          node --input-type=module <<'NODE'
+          const base = process.env.AIRE_BASE_URL;
+          const secret = process.env.AIRE_CRON_SECRET;
+          if (!base || !secret || secret.length < 32) {
+            throw new Error('Configura la variable AIRE_BASE_URL y el secreto AIRE_CRON_SECRET del repositorio.');
+          }
+          const url = new URL('/api/cron', base);
+          if (url.protocol !== 'https:' || url.username || url.password) {
+            throw new Error('AIRE_BASE_URL debe ser una URL HTTPS pública sin credenciales.');
+          }
+          const response = await fetch(url, {
+            headers: { Authorization: 'Bearer ' + secret },
+            redirect: 'error', signal: AbortSignal.timeout(55000),
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Falló la comprobación programada.');
+          console.log(JSON.stringify(data));
+          if (data.failures > 0) process.exitCode = 1;
+          NODE
