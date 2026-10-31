@@ -8,7 +8,7 @@ import {
 import { digest, requireSessionSecret, sessionConfigured, clientFingerprint } from './session.js';
 import {
   CHANNELS, CHANNEL_NAMES, normalizeContact, maskContact, providerStatus, providerDetails,
-  sendChannel, pollDelivery, smsText,
+  sendChannel, pollDelivery, smsText, providerConnections,
 } from './notifications.js';
 
 const lifetime = 2592000;
@@ -142,7 +142,8 @@ async function attempt(id, channel, contact, kind, work) {
     Object.assign(record, { status: result.status, providerId: result.id,
       message: result.message, errorCode: result.errorCode || null });
   } catch (error) {
-    result = { channel, ok: false, status: 'failed', message: error instanceof HttpError
+    result = { channel, ok: false, status: 'failed', errorCode: error.providerCode || null,
+      message: error instanceof HttpError
       ? error.message : 'No se pudo completar el envío. Consulta el historial antes de repetir.' };
     Object.assign(record, result);
   }
@@ -198,7 +199,9 @@ export async function requestVerification(req, id, input) {
       { recipient: contact, verification: true, code }));
   if (!result.ok) {
     await redisCommand('DEL', storageKey(challengeKey));
-    throw new HttpError(result.message, 502);
+    const error = new HttpError(result.message, 502);
+    error.providerCode = result.errorCode || null;
+    throw error;
   }
   return { channel: input.channel, verified: false, expiresIn: 600,
     message: 'Código solicitado. Revisa tu canal e introdúcelo aquí.', result };
@@ -379,7 +382,8 @@ export async function subscriptionStatus(id) {
   })) : [];
   const lastRun = configured ? await readRecord('last-cron') : null;
   return {
-    channels, channelDetails: providerDetails(), storageMode: configured ? 'server' : 'unconfigured',
+    channels, channelDetails: providerDetails(), providerConnections: providerConnections(),
+    storageMode: configured ? 'server' : 'unconfigured',
     limits: messageLimits(), dailyLimit: messageLimits().auto,
     backgroundReady: configured && sessionConfigured() && (process.env.CRON_SECRET || '').length >= 32,
     configurationError: !configured ? 'El servicio de alertas todavía necesita configurar su almacenamiento.'

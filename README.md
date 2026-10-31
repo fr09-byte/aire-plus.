@@ -4,6 +4,8 @@ Panel educativo de calidad del aire con mapa de las 16 alcaldías, pronóstico, 
 
 Esta versión conecta el registro, la confirmación de contactos y el envío programado mediante un único servicio y una única conexión Redis. Cada visitante puede registrar su propio contacto; ya no se envían los avisos al destinatario fijo del propietario del sitio.
 
+Guía paso a paso de Telegram, diagnóstico de Twilio y correo: [Configurar los canales](docs/CONFIGURAR_CANALES.md).
+
 ## Desplegar en Vercel
 
 1. Integra los cambios del repositorio y conserva todas las carpetas, no solo index.html.
@@ -41,7 +43,7 @@ Configura solo los canales que vayas a ofrecer:
 
 Los destinatarios se registran desde la página. TELEGRAM_CHAT_ID, TWILIO_SMS_TO y TWILIO_WHATSAPP_TO dejan de utilizarse.
 
-**Telegram:** cada persona debe iniciar la conversación con el bot enviando /start e introducir su chat ID numérico. El nombre de usuario no reemplaza ese ID. El código recibido confirma que puede leer ese chat.
+**Telegram:** la ayuda «¿Cómo consigo mi ID de Telegram?» explica cómo consultar el ID con un bot externo y muestra el enlace al bot de AIRE+, obtenido automáticamente mediante getMe. Cada persona debe iniciar la conversación con el bot enviando /start e introducir su chat ID numérico. El nombre de usuario no reemplaza ese ID. El código recibido confirma que puede leer ese chat.
 
 **SMS:** usa números E.164, por ejemplo +525512345678. Las cuentas de prueba de Twilio pueden requerir verificar antes los destinatarios y habilitar el país. Los mensajes se resumen y se limitan a 160 septetos GSM-7 para evitar dividirlos por longitud.
 
@@ -99,6 +101,10 @@ Las cuotas son compartidas entre instancias y se reservan de forma atómica en R
 Los límites son de intentos, no de pesos. Los proveedores pueden generar cargos por códigos, pruebas y avisos. Ajusta las cuotas al presupuesto del proyecto.
 
 El sitio utiliza una cookie firmada, HttpOnly y SameSite para que cada navegador gestione sus propios registros. No pide claves privadas al visitante. Sin Redis o sin SESSION_SECRET estable, el servidor bloquea los envíos y explica qué falta. Los errores de configuración no se convierten en mensajes de éxito.
+
+## Comprobar conexión
+
+El panel distingue variables cargadas, credenciales comprobadas y conexión rechazada. El botón Comprobar conexión valida Telegram con getMe y Twilio consultando la cuenta. No envía mensajes ni devuelve datos privados de esa cuenta. Los resultados se almacenan brevemente en memoria y cambian al actualizar las credenciales. Para correo se utiliza el código de confirmación, porque una clave limitada a Mail Send no necesita permisos de lectura de la cuenta.
 
 ## Historial y entrega
 

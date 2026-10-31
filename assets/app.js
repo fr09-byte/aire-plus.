@@ -825,7 +825,8 @@ window.addEventListener("DOMContentLoaded", () => {
     const selected = new Set(preferences().channels);
     for (const [channel] of Object.entries(channelNames)) {
       document.querySelector('[data-contact-channel="' + channel + '"]').hidden = !selected.has(channel);
-      const verified = contactVerified(channel), ready = latestStatus?.channels?.[channel];
+      const connection = latestStatus?.providerConnections?.[channel];
+      const verified = contactVerified(channel), ready = latestStatus?.channels?.[channel] && connection?.state !== "error";
       const status = $("status-" + channel);
       document.querySelector('[data-verify-send="' + channel + '"]').disabled = busy || verified || !ready;
       document.querySelector('[data-verify-confirm="' + channel + '"]').disabled = busy || verified || !ready;
@@ -833,6 +834,9 @@ window.addEventListener("DOMContentLoaded", () => {
       if (verified) {
         status.className = "contact-status tiny verified";
         status.textContent = "✓ Contacto confirmado en este navegador.";
+      } else if (connection?.state === "error") {
+        status.className = "contact-status tiny error";
+        status.textContent = connection.message;
       } else if (!ready && latestStatus) {
         status.className = "contact-status tiny";
         status.textContent = channelNames[channel] + " todavía no está habilitado en este servicio.";
@@ -908,12 +912,27 @@ window.addEventListener("DOMContentLoaded", () => {
     status.replaceChildren();
     for (const channel of Object.keys(channelNames)) {
       const el = document.createElement("span");
-      el.className = data.channels?.[channel] ? "ready" : "";
-      el.textContent = (data.channels?.[channel] ? "✓ " : "○ ") + channelNames[channel] +
-        (data.channels?.[channel] ? " habilitado" : " no disponible");
-      el.title = data.channelDetails?.[channel]?.message || "";
+      const connection = data.providerConnections?.[channel];
+      const state = connection?.state || (data.channels?.[channel] ? "configured" : "unconfigured");
+      el.className = state === "ready" ? "ready" : state === "error" ? "error" : "";
+      el.textContent = (state === "ready" ? "✓ " : state === "error" ? "✕ " : "○ ") +
+        channelNames[channel] + ({
+          ready: " · credenciales comprobadas", error: " · conexión rechazada",
+          configured: " · configurado, sin comprobar", unconfigured: " · por configurar",
+        })[state];
+      el.title = connection?.message || data.channelDetails?.[channel]?.message || "";
       status.append(el);
     }
+    const diagnosticList = $("providerDiagnosticsList");
+    diagnosticList.replaceChildren();
+    for (const [channel, connection] of Object.entries(data.providerConnections || {})) {
+      const li = document.createElement("li");
+      li.textContent = channelNames[channel] + ": " + connection.message;
+      if (connection.state === "error") li.className = "contact-status error";
+      diagnosticList.append(li);
+    }
+    if (Object.values(data.providerConnections || {}).some(c => c.state === "error"))
+      $("providerDiagnostics").hidden = false;
     $("quotaInfo").textContent = "Cuotas diarias compartidas del servicio: " + data.limits.auto +
       " avisos, " + data.limits.test + " pruebas y " + data.limits.verification +
       " códigos. Los intentos fallidos también cuentan.";
@@ -966,6 +985,7 @@ window.addEventListener("DOMContentLoaded", () => {
     catch (error) {
       $("alertLog").className = "alert-log error";
       $("alertLog").textContent = error.message;
+      await loadBackendStatus(true);
     } finally {
       busy = false;
       button.replaceChildren(...children);
@@ -1025,8 +1045,28 @@ window.addEventListener("DOMContentLoaded", () => {
       await loadBackendStatus(true);
     }));
   }
+  let telegramHelpLoaded = false, telegramHelpLoading = false;
+  $("telegramHelp").addEventListener("toggle", async () => {
+    if (!$("telegramHelp").open || telegramHelpLoaded || telegramHelpLoading) return;
+    telegramHelpLoading = true;
+    $("telegramBotHelpStatus").textContent = "Buscando el bot de AIRE+…";
+    try {
+      const info = await requestApi("telegram_info");
+      if (!info.botUrl) throw new Error(info.message || "El bot de AIRE+ no está disponible.");
+      $("telegramBotLink").href = info.botUrl;
+      $("telegramBotLink").hidden = false;
+      $("telegramBotHelpStatus").textContent = "@" + info.username;
+      telegramHelpLoaded = true;
+    } catch (error) {
+      $("telegramBotHelpStatus").textContent = error.message;
+    } finally { telegramHelpLoading = false; }
+  });
   $("checkChannels").addEventListener("click", () =>
-    alertOperation($("checkChannels"), () => loadBackendStatus(false)));
+    alertOperation($("checkChannels"), async () => {
+      applyServerStatus(await requestApi("diagnostics"));
+      $("providerDiagnostics").hidden = false;
+      $("alertLog").textContent = "Comprobación terminada. Revisa el resultado de cada canal.";
+    }));
   $("alertsForm").addEventListener("submit", event => {
     event.preventDefault();
     alertOperation($("activateAlerts"), async () => {

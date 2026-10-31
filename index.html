@@ -703,6 +703,18 @@
                   <label for="contact-telegram">Tu ID de Telegram</label>
                   <input id="contact-telegram" type="text" placeholder="Ej. 123456789" maxlength="254" autocomplete="off" aria-describedby="hint-telegram status-telegram" />
                   <p id="hint-telegram" class="tiny muted">Envía /start al bot e introduce tu ID numérico de Telegram.</p>
+                  <details id="telegramHelp" class="channel-help">
+                    <summary>¿Cómo consigo mi ID de Telegram?</summary>
+                    <ol>
+                      <li>Abre <a href="https://t.me/userinfobot" class="link" target="_blank" rel="noopener noreferrer">Consultar mi ID en Telegram ↗</a> y pulsa <strong>Iniciar / Start</strong>. Este enlace abre el bot externo @userinfobot.</li>
+                      <li>Copia el número que aparezca junto a <strong>Id</strong> y pégalo en <strong>Tu ID de Telegram</strong>.</li>
+                      <li>Abre el bot de AIRE+ y pulsa <strong>Iniciar</strong> o envía <strong>/start</strong>.
+                        <a id="telegramBotLink" class="link" target="_blank" rel="noopener noreferrer" hidden>Abrir el bot de AIRE+ ↗</a>
+                        <span id="telegramBotHelpStatus" class="tiny muted">La dirección del bot se consultará al abrir esta ayuda.</span>
+                      </li>
+                      <li>Regresa aquí, autoriza los avisos, pulsa <strong>Enviar código</strong> y confirma el código recibido.</li>
+                    </ol>
+                  </details>
                   <div class="verification-actions">
                     <button type="button" class="btn" data-verify-send="telegram">Enviar código</button>
                     <div class="verification-code">
@@ -800,7 +812,11 @@
               </form>
               <div id="alertLog" class="alert-log" role="status" aria-live="polite"></div>
               <div id="channelStatus" class="channel-state" aria-label="Estado de los canales"></div>
-              <button id="checkChannels" type="button" class="btn flat">Revisar configuración</button>
+              <button id="checkChannels" type="button" class="btn flat">Comprobar conexión</button>
+              <div id="providerDiagnostics" class="provider-diagnostics" hidden>
+                <p class="tiny muted">La comprobación valida las credenciales de Telegram y Twilio. El código de cada canal comprueba la recepción.</p>
+                <ul id="providerDiagnosticsList" aria-live="polite"></ul>
+              </div>
               <details class="delivery-history">
                 <summary>Historial de mis envíos</summary>
                 <p id="quotaInfo" class="tiny muted"></p>
