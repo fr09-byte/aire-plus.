@@ -4,6 +4,8 @@ Panel educativo de calidad del aire con mapa de las 16 alcaldías, pronóstico, 
 
 Esta versión conecta el registro, la confirmación de contactos y el envío programado mediante un único servicio y una única conexión Redis. Cada visitante puede registrar su propio contacto; ya no se envían los avisos al destinatario fijo del propietario del sitio.
 
+Guía paso a paso de Telegram, diagnóstico de Twilio y correo: [Configurar los canales](docs/CONFIGURAR_CANALES.md).
+
 ## Desplegar en Vercel
 
 1. Integra los cambios del repositorio y conserva todas las carpetas, no solo index.html.
@@ -41,9 +43,9 @@ Configura solo los canales que vayas a ofrecer:
 
 Los destinatarios se registran desde la página. TELEGRAM_CHAT_ID, TWILIO_SMS_TO y TWILIO_WHATSAPP_TO dejan de utilizarse.
 
-**Telegram:** cada persona debe iniciar la conversación con el bot enviando /start e introducir su chat ID numérico. El nombre de usuario no reemplaza ese ID. El código recibido confirma que puede leer ese chat.
+**Telegram:** la ayuda «¿Cómo consigo mi ID de Telegram?» explica cómo consultar el ID con un bot externo y muestra el enlace al bot de AIRE+, obtenido automáticamente mediante getMe. Cada persona debe iniciar la conversación con el bot enviando /start e introducir su chat ID numérico. El nombre de usuario no reemplaza ese ID. El código recibido confirma que puede leer ese chat.
 
-**SMS:** usa números E.164, por ejemplo +525512345678. Las cuentas de prueba de Twilio pueden requerir verificar antes los destinatarios y habilitar el país. Los mensajes se resumen y se limitan a 160 septetos GSM-7 para evitar dividirlos por longitud.
+**SMS:** usa números E.164, por ejemplo +525512345678. Revisa los destinatarios y países permitidos por tu cuenta. En la prueba actual de Twilio, el remitente puede depender del producto y destinatario, y el contenido puede estar limitado a ejemplos predefinidos; eso puede impedir los códigos y avisos personalizados de AIRE+. El error 572002 indica que el número From no corresponde a ese receptor. Los mensajes de AIRE+ se resumen y se limitan a 160 septetos GSM-7 para evitar dividirlos por longitud.
 
 **WhatsApp:** el remitente debe llevar el prefijo whatsapp:. En Sandbox, cada receptor debe unirse con el código join que muestre la consola de Twilio. Fuera de la ventana de atención hace falta una plantilla aprobada.
 
@@ -52,6 +54,8 @@ Los destinatarios se registran desde la página. TELEGRAM_CHAT_ID, TWILIO_SMS_TO
 - Si no hay plantilla de confirmación, se utiliza la de aviso o un mensaje de texto, según las variables disponibles. La plantilla configurada debe admitir ese uso; revisa las normas y la aprobación en tu cuenta.
 
 **Correo:** EMAIL_FROM debe ser un remitente verificado en SendGrid. Las credenciales de Twilio Messaging no activan SendGrid automáticamente. La respuesta 202 significa que SendGrid aceptó el mensaje; la entrega al buzón no se confirma en esta versión.
+
+Si SendGrid rechaza la activación de la cuenta, su equipo debe revisar esa decisión antes de poder obtener una clave de envío. Cambiar las variables de Vercel no resuelve ese bloqueo. Esta versión utiliza SendGrid para correo; un proveedor diferente requiere una integración adicional.
 
 ## Recorrido del visitante
 
@@ -99,6 +103,10 @@ Las cuotas son compartidas entre instancias y se reservan de forma atómica en R
 Los límites son de intentos, no de pesos. Los proveedores pueden generar cargos por códigos, pruebas y avisos. Ajusta las cuotas al presupuesto del proyecto.
 
 El sitio utiliza una cookie firmada, HttpOnly y SameSite para que cada navegador gestione sus propios registros. No pide claves privadas al visitante. Sin Redis o sin SESSION_SECRET estable, el servidor bloquea los envíos y explica qué falta. Los errores de configuración no se convierten en mensajes de éxito.
+
+## Comprobar conexión
+
+El panel distingue variables cargadas, credenciales comprobadas y conexión rechazada. El botón Comprobar conexión valida Telegram con getMe y Twilio consultando la cuenta. No envía mensajes ni devuelve datos privados de esa cuenta. Los resultados se almacenan brevemente en memoria y cambian al actualizar las credenciales. Para correo se utiliza el código de confirmación, porque una clave limitada a Mail Send no necesita permisos de lectura de la cuenta.
 
 ## Historial y entrega
 

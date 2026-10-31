@@ -1,6 +1,7 @@
 import { HttpError, reply, fail, checkOrigin, readJson } from '../server/http.js';
 import { session, touchSession, requireSessionSecret, clientFingerprint } from '../server/session.js';
 import { requireStorage, rateLimit } from '../server/storage.js';
+import { telegramBotInfo, diagnoseProviders } from '../server/notifications.js';
 import {
   validatePreferences, legacyInput, assertVerified, requestVerification, verifyContact,
   getSubscription, saveSubscription, dispatch, subscriptionStatus, deliveryHistory,
@@ -19,6 +20,11 @@ export default async function handler(req, res) {
     const id = session(req, res);
     if (req.method === 'GET') return reply(res, 200, await subscriptionStatus(id));
     const input = legacyInput(await readJson(req));
+    if (input.action === 'telegram_info') return reply(res, 200, await telegramBotInfo());
+    if (input.action === 'diagnostics') {
+      await diagnoseProviders();
+      return reply(res, 200, await subscriptionStatus(id));
+    }
     requireStorage();
     requireSessionSecret();
     if (input.action === 'request_verification')

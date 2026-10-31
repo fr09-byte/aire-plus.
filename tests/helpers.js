@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import alerts from '../api/alerts.js';
 import { zones } from '../shared/air-core.js';
 import { clearAirCache } from '../api/air.js';
+import { clearProviderConnections } from '../server/notifications.js';
 
 export function fixture(aqi = 125, now = Date.now()) {
   const hour = Math.floor(now / 3600000) * 3600000;
@@ -99,10 +100,14 @@ export async function setup(t) {
     MAX_MESSAGES_PER_DAY: '6', MAX_TEST_MESSAGES_PER_DAY: '3', MAX_VERIFICATIONS_PER_DAY: '12',
   });
   clearAirCache();
+  clearProviderConnections();
   const redis = new Redis({ host: randomUUID() });
   const state = {
     redis, telegram: [], twilio: [], emails: [], commands: [], airValue: 125,
-    telegramError: null, deliveryStatus: 'queued', redisErrors: [], failRedis: false,
+    telegramError: null, telegramInfoError: null, telegramInfoRequests: 0,
+    twilioAuthError: null, twilioSendError: null, twilioAccountType: 'Full',
+    twilioAccountRequests: 0, lastTwilioAuthorization: null,
+    deliveryStatus: 'queued', redisErrors: [], failRedis: false,
   };
   const originalFetch = global.fetch;
   const json = (data, status = 200, headers = {}) =>
@@ -123,6 +128,11 @@ export async function setup(t) {
     }
     if (value.startsWith('https://air-quality-api.open-meteo.com/'))
       return json(fixture(state.airValue));
+    if (value.startsWith('https://api.telegram.org/') && value.endsWith('/getMe')) {
+      state.telegramInfoRequests++;
+      if (state.telegramInfoError) return json({ ok: false, error_code: state.telegramInfoError }, 401);
+      return json({ ok: true, result: { id: 123456, is_bot: true, username: 'AirePlusUnitTestBot' } });
+    }
     if (value.startsWith('https://api.telegram.org/')) {
       const body = JSON.parse(options.body);
       state.telegram.push(body);
@@ -130,9 +140,18 @@ export async function setup(t) {
       return json({ ok: true, result: { message_id: state.telegram.length } });
     }
     if (value.startsWith('https://api.twilio.com/')) {
+      state.lastTwilioAuthorization = options.headers?.Authorization;
+      if (/\/Accounts\/AC[a-f0-9]{32}\.json$/i.test(value)) {
+        state.twilioAccountRequests++;
+        if (state.twilioAuthError) return json({ code: state.twilioAuthError }, 401);
+        return json({ sid: process.env.TWILIO_ACCOUNT_SID.trim(), status: 'active', type: state.twilioAccountType,
+          auth_token: 'never-disclose-this-account-token', friendly_name: 'private@example.com' });
+      }
+      if (state.twilioAuthError) return json({ code: state.twilioAuthError }, 401);
       if (options.method === 'POST') {
         const body = Object.fromEntries(new URLSearchParams(options.body));
         state.twilio.push(body);
+        if (state.twilioSendError) return json({ code: state.twilioSendError }, 400);
         return json({ sid: 'SM' + state.twilio.length.toString(16).padStart(32, '0'), status: 'queued' }, 201);
       }
       return json({ status: state.deliveryStatus, error_code: state.deliveryStatus === 'undelivered' ? 63016 : null });
@@ -151,6 +170,7 @@ export async function setup(t) {
     await redis.flushall();
     redis.disconnect();
     clearAirCache();
+    clearProviderConnections();
   });
   state.codeFor = (channel, contact) => {
     const message = channel === 'telegram'

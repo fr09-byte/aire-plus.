@@ -2681,6 +2681,16 @@ html[data-theme="light"] .analysis-metric {
 .vehicle-fields { margin-top: 14px; }
 .delivery-history { border-top: 1px solid var(--border); margin-top: 20px; padding-top: 15px; }
 .delivery-history summary { cursor: pointer; font-size: 13px; font-weight: 600; }
+.channel-help { margin: 12px 0; font-size: 12px; line-height: 1.75; }
+.channel-help summary { color: var(--green); cursor: pointer; font-weight: 600; }
+.channel-help ol { padding-left: 20px; margin: 10px 0; }
+.channel-help li { margin: 8px 0; }
+.channel-help #telegramBotLink, .channel-help #telegramBotHelpStatus { display: block; margin-top: 5px; }
+.provider-diagnostics { border: 1px solid var(--border); border-radius: 10px; padding: 12px 15px; margin: 12px 0; font-size: 12px; line-height: 1.7; }
+.provider-diagnostics ul { padding-left: 18px; margin: 8px 0 0; }
+.provider-diagnostics li { margin: 6px 0; }
+.channel-state .error { color: #ef8590; border-color: #a74753; }
+html[data-theme="light"] .channel-state .error, html[data-theme="light"] .contact-status.error { color: #a22439; }
 .delivery-list { list-style: none; padding: 0; margin: 12px 0; }
 .delivery-list li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
 .delivery-list time { display: block; color: var(--muted); font-size: 11px; }
