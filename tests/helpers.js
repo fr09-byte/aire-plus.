@@ -105,7 +105,8 @@ export async function setup(t) {
   const state = {
     redis, telegram: [], twilio: [], emails: [], commands: [], airValue: 125,
     telegramError: null, telegramInfoError: null, telegramInfoRequests: 0,
-    twilioAuthError: null, twilioAccountRequests: 0, lastTwilioAuthorization: null,
+    twilioAuthError: null, twilioSendError: null, twilioAccountType: 'Full',
+    twilioAccountRequests: 0, lastTwilioAuthorization: null,
     deliveryStatus: 'queued', redisErrors: [], failRedis: false,
   };
   const originalFetch = global.fetch;
@@ -143,13 +144,14 @@ export async function setup(t) {
       if (/\/Accounts\/AC[a-f0-9]{32}\.json$/i.test(value)) {
         state.twilioAccountRequests++;
         if (state.twilioAuthError) return json({ code: state.twilioAuthError }, 401);
-        return json({ sid: process.env.TWILIO_ACCOUNT_SID.trim(), status: 'active',
+        return json({ sid: process.env.TWILIO_ACCOUNT_SID.trim(), status: 'active', type: state.twilioAccountType,
           auth_token: 'never-disclose-this-account-token', friendly_name: 'private@example.com' });
       }
       if (state.twilioAuthError) return json({ code: state.twilioAuthError }, 401);
       if (options.method === 'POST') {
         const body = Object.fromEntries(new URLSearchParams(options.body));
         state.twilio.push(body);
+        if (state.twilioSendError) return json({ code: state.twilioSendError }, 400);
         return json({ sid: 'SM' + state.twilio.length.toString(16).padStart(32, '0'), status: 'queued' }, 201);
       }
       return json({ status: state.deliveryStatus, error_code: state.deliveryStatus === 'undelivered' ? 63016 : null });

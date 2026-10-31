@@ -153,8 +153,11 @@ export async function diagnoseProviders() {
     if (data.sid !== setting('TWILIO_ACCOUNT_SID') || data.status !== 'active')
       return { state: 'error', message: 'La cuenta de Twilio no está activa o no corresponde a las credenciales configuradas.' };
     // Never forward the account response: it can include the account Auth Token.
-    return { state: 'ready',
-      message: 'Credenciales de Twilio comprobadas. El envío todavía depende del remitente, el destinatario y las restricciones de la cuenta.' };
+    const trial = data.type === 'Trial';
+    return { state: 'ready', trial,
+      message: trial
+        ? 'Credenciales de Twilio comprobadas. Cuenta de prueba (Trial): revisa el remitente asignado a cada destinatario y las plantillas permitidas. Las restricciones pueden impedir códigos y avisos personalizados de AIRE+.'
+        : 'Credenciales de Twilio comprobadas. El envío todavía depende del remitente, el destinatario y las restricciones de la cuenta.' };
   }));
   await Promise.all(checks);
   return providerConnections();
@@ -174,7 +177,9 @@ export function twilioError(code) {
     20003: 'Twilio rechazó las credenciales (código 20003). El administrador debe revisar el Account SID y el Auth Token reales de la misma cuenta y volver a desplegar.',
     21608: 'La cuenta de prueba de Twilio requiere verificar este destinatario.',
     21606: 'El remitente de Twilio no está habilitado para SMS.',
+    21654: 'Twilio requiere un ContentSid de plantilla (código 21654). El administrador debe revisar la plantilla HX y sus variables; en Trial solo se admiten las opciones de prueba habilitadas en la consola.',
     21408: 'El destino geográfico no está habilitado en Twilio.',
+    572002: 'El remitente de prueba no está asignado a este destinatario (código 572002). El administrador debe copiar de Twilio el número From de Messaging para ese receptor y actualizar el remitente del canal en Vercel.',
     63007: 'El remitente de WhatsApp o el número del Sandbox no es válido.',
     63015: 'Envía join y el código de tu Sandbox al número indicado por Twilio.',
     63016: 'WhatsApp requiere una plantilla aprobada fuera de la ventana de atención.',
@@ -260,7 +265,7 @@ export async function sendChannel(channel, message, options = {}) {
   if (!response.ok) {
     const code = Number(data.code || response.status);
     if (code === 20003 || response.status === 401) rememberTwilioError(code);
-    const error = new HttpError(twilioError(code), 502);
+    const error = new HttpError(CHANNEL_NAMES[channel] + ': ' + twilioError(code), 502);
     error.provider = 'twilio';
     error.providerCode = code;
     throw error;

@@ -43,15 +43,40 @@ Tu celular se introduce como destinatario en AIRE+. Por ejemplo, el formato mexi
 
 Para SMS, revisa el destinatario permitido y las restricciones de país de tu cuenta Trial. Para WhatsApp Sandbox, envía desde tu WhatsApp el mensaje join con el código que muestre la consola de Twilio. Cada receptor debe unirse al Sandbox.
 
+### Error 572002: remitente de prueba incorrecto
+
+Twilio indica que el número From no es el remitente de Messaging asignado a ese destinatario verificado. En la prueba, el número puede variar entre productos y receptores.
+
+1. En la consola de Twilio abre el recorrido Try out SMS y selecciona el destinatario que estás probando.
+2. Consulta el número de prueba que aparece como From en el ejemplo de solicitud para ese receptor. No copies tu celular ni el remitente de otro producto.
+3. Para SMS, guarda ese número internacional en TWILIO_SMS_FROM. Para WhatsApp, revisa por separado el remitente que muestra su propio recorrido de prueba y conserva el prefijo whatsapp: en TWILIO_WHATSAPP_FROM.
+4. Guarda los cambios en el entorno correcto de Vercel, vuelve a desplegar y abre el nuevo despliegue.
+
+Corregir From no elimina las demás restricciones de la prueba.
+
+### Error 21654: se requiere una plantilla ContentSid
+
+Twilio documenta este error cuando recibe variables de una plantilla sin el ContentSid correspondiente. Además, el recorrido actual de prueba de WhatsApp exige elegir una plantilla de Twilio mediante ContentSid. Consulta la solicitud y el error en los registros de Twilio para identificar el canal afectado.
+
+Al utilizar una plantilla de WhatsApp, AIRE+ envía ContentSid con las variables correspondientes y omite Body. Configura un identificador HX válido en TWILIO_WHATSAPP_CONTENT_SID y, si usas una plantilla distinta para códigos, TWILIO_WHATSAPP_VERIFY_CONTENT_SID. La primera recibe el texto del aviso en la variable 1; la segunda recibe el código real de seis dígitos.
+
+Una plantilla de demostración que solo envía un texto fijo no sirve para confirmar un código de AIRE+ ni para transmitir la calidad del aire. La prueba actual de Twilio limita el contenido a ejemplos predefinidos; una cuenta debe permitir el contenido y los destinatarios reales antes de utilizar estos canales en AIRE+. No se sustituyen los códigos de confirmación por mensajes de demostración.
+
 Fuera de la ventana de atención de WhatsApp se requiere una plantilla aprobada. El proyecto admite TWILIO_WHATSAPP_CONTENT_SID para avisos y TWILIO_WHATSAPP_VERIFY_CONTENT_SID para códigos; revisa el README antes de configurar sus variables.
 
 ## Correo electrónico: configuración completa en SendGrid
 
 AIRE+ utiliza la API de SendGrid. La cuenta debe tener acceso al producto de correo, una clave con permiso de envío y un remitente verificado.
 
+### Si SendGrid rechazó la activación
+
+Un correo del equipo de incorporación que indique que no puede activar tu cuenta confirma una decisión del proveedor. Responde a ese mismo mensaje para solicitar una revisión y explica el uso real: proyecto educativo de calidad del aire de CDMX, códigos de confirmación y avisos solicitados por cada visitante. La aprobación depende de SendGrid.
+
+Hasta que el proveedor habilite la cuenta, no podrás completar la configuración de envío. Los pasos siguientes corresponden a cuentas con acceso a SendGrid. Un proveedor alternativo necesita su propia integración en el servidor; cambiar EMAIL_FROM no sustituye a SendGrid.
+
 ### 1. Verifica el correo que enviará los mensajes
 
-1. Entra en [SendGrid](https://app.sendgrid.com/).
+1. Entra con [Twilio Login](https://www.twilio.com/login) y abre Twilio SendGrid desde Product Switcher, el selector de productos.
 2. Abre **Settings → Sender Authentication**.
 3. En **Single Sender Verification**, selecciona **Verify a Single Sender**.
 4. Completa el formulario con datos válidos. En **From Name** coloca AIRE+. En **From Email Address** coloca el correo que controlarás como remitente. Puedes usar ese mismo correo en Reply To.
@@ -105,6 +130,12 @@ La aceptación del proveedor no equivale a entrega confirmada. No publiques clav
 - [Bot de consulta de ID](https://t.me/userinfobot)
 - [Telegram getMe](https://core.telegram.org/bots/api#getme)
 - [Twilio: error 20003](https://www.twilio.com/docs/api/errors/20003)
+- [Twilio: error 21654](https://www.twilio.com/docs/api/errors/21654)
+- [Twilio: error 572002](https://www.twilio.com/docs/api/errors/572002)
+- [Restricciones de las cuentas de prueba de Twilio](https://www.twilio.com/docs/usage/trials)
+- [Prueba de WhatsApp y ContentSid](https://www.twilio.com/docs/usage/trials/try-out-whatsapp)
+- [Acceso unificado a SendGrid](https://www.twilio.com/docs/sendgrid/ui/account-and-settings/twilio-login-overview)
+- [Revisión de cuentas de SendGrid](https://help.twilio.com/articles/47473761032731)
 - [SendGrid: verificar un remitente](https://www.twilio.com/docs/sendgrid/ui/sending-email/sender-verification)
 - [SendGrid: claves API](https://www.twilio.com/docs/sendgrid/ui/account-and-settings/api-keys)
 - [Vercel: variables de entorno](https://vercel.com/docs/environment-variables/managing-environment-variables)

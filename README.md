@@ -45,7 +45,7 @@ Los destinatarios se registran desde la página. TELEGRAM_CHAT_ID, TWILIO_SMS_TO
 
 **Telegram:** la ayuda «¿Cómo consigo mi ID de Telegram?» explica cómo consultar el ID con un bot externo y muestra el enlace al bot de AIRE+, obtenido automáticamente mediante getMe. Cada persona debe iniciar la conversación con el bot enviando /start e introducir su chat ID numérico. El nombre de usuario no reemplaza ese ID. El código recibido confirma que puede leer ese chat.
 
-**SMS:** usa números E.164, por ejemplo +525512345678. Las cuentas de prueba de Twilio pueden requerir verificar antes los destinatarios y habilitar el país. Los mensajes se resumen y se limitan a 160 septetos GSM-7 para evitar dividirlos por longitud.
+**SMS:** usa números E.164, por ejemplo +525512345678. Revisa los destinatarios y países permitidos por tu cuenta. En la prueba actual de Twilio, el remitente puede depender del producto y destinatario, y el contenido puede estar limitado a ejemplos predefinidos; eso puede impedir los códigos y avisos personalizados de AIRE+. El error 572002 indica que el número From no corresponde a ese receptor. Los mensajes de AIRE+ se resumen y se limitan a 160 septetos GSM-7 para evitar dividirlos por longitud.
 
 **WhatsApp:** el remitente debe llevar el prefijo whatsapp:. En Sandbox, cada receptor debe unirse con el código join que muestre la consola de Twilio. Fuera de la ventana de atención hace falta una plantilla aprobada.
 
@@ -54,6 +54,8 @@ Los destinatarios se registran desde la página. TELEGRAM_CHAT_ID, TWILIO_SMS_TO
 - Si no hay plantilla de confirmación, se utiliza la de aviso o un mensaje de texto, según las variables disponibles. La plantilla configurada debe admitir ese uso; revisa las normas y la aprobación en tu cuenta.
 
 **Correo:** EMAIL_FROM debe ser un remitente verificado en SendGrid. Las credenciales de Twilio Messaging no activan SendGrid automáticamente. La respuesta 202 significa que SendGrid aceptó el mensaje; la entrega al buzón no se confirma en esta versión.
+
+Si SendGrid rechaza la activación de la cuenta, su equipo debe revisar esa decisión antes de poder obtener una clave de envío. Cambiar las variables de Vercel no resuelve ese bloqueo. Esta versión utiliza SendGrid para correo; un proveedor diferente requiere una integración adicional.
 
 ## Recorrido del visitante
 
